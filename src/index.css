@@ -261,3 +261,34 @@ header .nav a:hover { background: var(--surface); }
   color: var(--text);
 }
 .card.placeholder p { color: var(--muted); margin: 0; }
+
+/* Actions (card buttons) */
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.action {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  border-radius: 10px;
+  line-height: 1.2;
+  min-height: 38px;
+}
+.action:hover { background: color-mix(in oklab, var(--elev) 92%, transparent); }
+.action-primary {
+  background: #111827;
+  color: #fff;
+  border-color: #111827;
+}
+.action-secondary { background: var(--surface); color: var(--text); }
+[data-theme="dark"] .action-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0b1020;
+}
+@media (max-width: 767.98px) {
+  .actions { gap: 6px; }
+  .action { padding: 6px 10px; font-size: 14px; border-radius: 9px; min-height: 36px; }
+}
+@media (max-width: 399.98px) {
+  .action { padding: 5px 9px; font-size: 13.5px; }
+}
