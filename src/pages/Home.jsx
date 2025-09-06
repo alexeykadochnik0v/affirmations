@@ -235,11 +235,12 @@ export default function Home() {
         {categories.map((c) => (
           <button
             key={c.key}
-            className="chip"
+            className={`chip ${category === c.key ? 'active' : ''}`}
             onClick={() => onSelectCategory(c.key)}
-            style={{ cursor: 'pointer', border: category === c.key ? '2px solid var(--accent)' : '1px solid var(--border)' }}
+            style={{ cursor: 'pointer' }}
           >
             {c.labelShort}
+            {category === c.key && <span className="chip-dot" aria-hidden="true" />}
           </button>
         ))}
       </div>
