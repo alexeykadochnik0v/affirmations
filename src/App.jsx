@@ -11,6 +11,7 @@ import ArticlesAdmin from './pages/admin/ArticlesAdmin'
 import RolesAdmin from './pages/admin/RolesAdmin'
 import Contacts from './pages/Contacts'
 import Donate from './pages/Donate'
+import AffirmationsAdmin from './pages/admin/AffirmationsAdmin'
 import Auth from './pages/Auth'
 
 function App() {
@@ -25,11 +26,13 @@ function App() {
           <Route path="/useful" element={<Useful />} />
           <Route path="/useful/:id" element={<Article />} />
           <Route path="/contacts" element={<Contacts />} />
+          {/* donate modal is global; keep route for now as example page or remove later */}
           <Route path="/donate" element={<Donate />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/admin" element={<RequireAdmin><AdminLayout /></RequireAdmin>}>
             <Route index element={<ArticlesAdmin />} />
             <Route path="articles" element={<ArticlesAdmin />} />
+            <Route path="affirmations" element={<AffirmationsAdmin />} />
             <Route path="roles" element={<RolesAdmin />} />
           </Route>
         </Routes>

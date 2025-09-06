@@ -6,6 +6,7 @@ import { loadAffirmations } from '../data/loadAffirmations';
 import { useAppStore } from '../store/useAppStore';
 import { useAuth } from '../auth/AuthProvider';
 import { addFavoriteRemote, removeFavoriteRemote, addHiddenRemote } from '../services/userData';
+import { listPublishedByCategory } from '../services/affirmations';
 
 const categories = [
   { key: 'love', labelShort: 'Любовь ❤️', labelLong: 'Любовь и отношения ❤️' },
@@ -64,11 +65,30 @@ export default function Home() {
 
   useEffect(() => {
     let mounted = true;
-    loadAffirmations().then((remote) => {
-      if (mounted && remote) setData(remote);
-    });
+    // 1) сначала пробуем загрузить опубликованные из Firestore для текущей категории
+    (async () => {
+      try {
+        const { items } = await listPublishedByCategory(category, 200);
+        if (mounted && items && items.length) {
+          // нормализуем под рендер: explanation <- meaning
+          const normalized = items.map((it) => ({
+            id: it.id,
+            text: it.text || '',
+            practice: it.practice || '',
+            explanation: it.meaning || it.explanation || '',
+          }));
+          setData((prev) => ({ ...prev, [category]: normalized }));
+          return; // есть данные из Firestore — хватит
+        }
+      } catch {}
+      // 2) иначе — загрузим JSON (глобально), он уже распределён по категориям
+      try {
+        const remote = await loadAffirmations();
+        if (mounted && remote) setData(remote);
+      } catch {}
+    })();
     return () => { mounted = false; };
-  }, []);
+  }, [category]);
 
   const list = data[category] || [];
   const visible = useMemo(() => list.filter((i) => !hidden.includes(i.id)), [list, hidden]);
