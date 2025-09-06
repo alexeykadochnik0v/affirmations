@@ -1,4 +1,4 @@
-import { collection, doc, getDocs, onSnapshot, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, getDocs, onSnapshot, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
 const colFavorites = (uid) => collection(db, 'users', uid, 'favorites');
@@ -9,6 +9,26 @@ export async function fetchFavorites(uid) {
   const list = [];
   snap.forEach((d) => list.push({ id: d.id, ...d.data() }));
   return list;
+}
+
+// Roles
+export function watchUserRole(uid, cb) {
+  const ref = doc(db, 'roles', uid);
+  return onSnapshot(
+    ref,
+    (snap) => {
+      if (snap.exists()) cb(snap.data()); else cb(null);
+    },
+    (err) => {
+      console.warn('watchUserRole error', err?.message || err);
+      cb(null);
+    }
+  );
+}
+
+export async function setUserRole(uid, role) {
+  const ref = doc(db, 'roles', uid);
+  await setDoc(ref, { role, updatedAt: Date.now() }, { merge: true });
 }
 
 export async function fetchHidden(uid) {

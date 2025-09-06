@@ -1,14 +1,16 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '../services/firebase';
-import { watchFavorites, watchHidden, migrateLocalToCloud } from '../services/userData';
+import { watchFavorites, watchHidden, migrateLocalToCloud, watchUserRole } from '../services/userData';
 import { useAppStore } from '../store/useAppStore';
 
-const AuthContext = createContext({ user: null, loading: true, signOut: async () => {} });
+const AuthContext = createContext({ user: null, loading: true, role: null, roleLoaded: false, isModerator: false, isAdmin: false, signOut: async () => {} });
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [role, setRole] = useState(null);
+  const [roleLoaded, setRoleLoaded] = useState(false);
   const setFavorites = useAppStore((s) => s.setFavorites);
   const setHidden = useAppStore((s) => s.setHidden);
   const [unsubs, setUnsubs] = useState([]);
@@ -33,7 +35,8 @@ export function AuthProvider({ children }) {
         } catch {}
         const offFav = watchFavorites(u.uid, (list) => setFavorites(list));
         const offHidden = watchHidden(u.uid, (list) => setHidden(list));
-        setUnsubs([offFav, offHidden]);
+        const offRole = watchUserRole(u.uid, (r) => { setRole(r?.role || null); setRoleLoaded(true); });
+        setUnsubs([offFav, offHidden, offRole]);
       }
     });
     return () => unsub();
@@ -42,10 +45,14 @@ export function AuthProvider({ children }) {
   const value = useMemo(() => ({
     user,
     loading,
+    role,
+    roleLoaded,
+    isModerator: role === 'moderator' || role === 'admin',
+    isAdmin: role === 'admin',
     signOut: async () => {
       await signOut(auth);
     },
-  }), [user, loading]);
+  }), [user, loading, role, roleLoaded]);
 
   return (
     <AuthContext.Provider value={value}>

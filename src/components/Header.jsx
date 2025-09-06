@@ -16,7 +16,7 @@ const activeStyle = {
 };
 
 export default function Header() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isModerator } = useAuth();
   const [avatarFailed, setAvatarFailed] = useState(false);
   const [open, setOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -86,6 +86,9 @@ export default function Header() {
           <NavLink to="/donate" style={({ isActive }) => ({ ...linkStyle, border: "1px solid var(--border)", ...(isActive ? activeStyle : {}) })}>донат</NavLink>
         </nav>
         <div className="actions" style={{ display: 'flex', gap: 8, marginLeft: 8, position: 'relative' }}>
+          {isModerator && (
+            <Link to="/admin" className="action action-secondary" title="Админка" style={{ whiteSpace: 'nowrap' }}>админ</Link>
+          )}
           {user ? (
             <button
               type="button"
