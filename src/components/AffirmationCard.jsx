@@ -1,41 +1,44 @@
 import { memo } from 'react';
 
-export default memo(function AffirmationCard({ item, onNext, onFavorite, onHide, disabledNext = false }) {
+export default memo(function AffirmationCard({ item, onNext, onFavorite, onHide, disabledNext = false, categoryLabel, favorited = false }) {
   if (!item) return null;
   return (
-    <article className="card" style={{ overflow: 'hidden' }}>
-      {item.image && (
-        <div style={{
-          position: 'relative',
-          borderRadius: 12,
-          overflow: 'hidden',
-          marginBottom: 16,
-          aspectRatio: '16 / 9',
-          background: '#eee',
-        }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={item.image}
-            alt=""
-            loading="lazy"
-            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-          />
+    <article className="card aff-card" style={{ overflow: 'hidden' }}>
+      {/* Header: category title and top-right actions */}
+      <div className="aff-head">
+        <div className="aff-cat">{categoryLabel || 'Аффирмация'}</div>
+        <div className="actions">
+          <button className="action action-secondary" onClick={onHide} title="Скрыть эту аффирмацию">скрыть</button>
+          <button
+            className={`action action-fav ${item && (typeof favorited !== 'undefined') && favorited ? 'is-active' : ''}`}
+            onClick={onFavorite}
+            title={favorited ? 'В избранном' : 'Добавить в избранное'}
+          >{favorited ? 'в избранном ★' : 'в избранное'}</button>
         </div>
-      )}
+      </div>
 
-      <h2 style={{ margin: '0 0 10px 0', fontSize: 22, lineHeight: 1.3 }}>{item.text}</h2>
+      {/* Main text */}
+      <div className="aff-text">
+        <div className="quote">«{item.text}»</div>
+        <div className="underline" />
+      </div>
 
-      {item.practice && (
-        <div style={{ marginTop: 12, padding: 12, border: '1px dashed var(--border)', borderRadius: 10, background: 'var(--elev)' }}>
-          <div style={{ fontWeight: 600, marginBottom: 6 }}>Практика</div>
-          <p style={{ margin: 0, color: 'var(--text)' }}>{item.practice}</p>
+      {/* Info grid: explanation and practice */}
+      <div className="aff-info">
+        <div className="aff-block">
+          <div className="aff-block-title">РАСШИФРОВКА</div>
+          <p className="aff-block-text">{item.explanation || '—'}</p>
         </div>
-      )}
+        <div className="aff-block">
+          <div className="aff-block-title tag">практика дня</div>
+          <p className="aff-block-text">{item.practice || '—'}</p>
+        </div>
+      </div>
 
-      <div className="actions" style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
-        <button className="action action-primary" onClick={onFavorite} title="Добавить в избранное">В избранное</button>
-        <button className="action action-secondary" onClick={onHide} title="Скрыть эту аффирмацию">Скрыть</button>
-        <button className="action action-secondary" onClick={onNext} title={disabledNext ? 'Немного паузы для осознанности' : 'Следующая'} disabled={disabledNext}>Следующая</button>
+      {/* Bottom actions */}
+      <div className="aff-actions">
+        <button className="action action-primary" onClick={onNext} title={disabledNext ? 'Немного паузы для осознанности' : 'Следующая'} disabled={disabledNext}>Следующая аффирмация →</button>
+        <button className="action action-secondary" title="Скоро">Хочу аффирмацию на свою тему</button>
       </div>
     </article>
   );

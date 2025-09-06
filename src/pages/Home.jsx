@@ -6,13 +6,13 @@ import { loadAffirmations } from '../data/loadAffirmations';
 import { useAppStore } from '../store/useAppStore';
 
 const categories = [
-  { key: 'love', label: 'Любовь и отношения ❤️' },
-  { key: 'money', label: 'Деньги и изобилие 💰' },
-  { key: 'health', label: 'Здоровье и гармония 🌿' },
-  { key: 'confidence', label: 'Уверенность и сила 💪' },
-  { key: 'calm', label: 'Спокойствие и расслабление 🕊️' },
-  { key: 'growth', label: 'Саморазвитие и цели 🚀' },
-  { key: 'feminine', label: 'Женская энергия 🌸' },
+  { key: 'love', labelShort: 'Любовь ❤️', labelLong: 'Любовь и отношения ❤️' },
+  { key: 'money', labelShort: 'Деньги 💰', labelLong: 'Деньги и изобилие 💰' },
+  { key: 'health', labelShort: 'Здоровье 🌿', labelLong: 'Здоровье и гармония 🌿' },
+  { key: 'confidence', labelShort: 'Уверенность 💪', labelLong: 'Уверенность и сила 💪' },
+  { key: 'calm', labelShort: 'Спокойствие 🕊️', labelLong: 'Спокойствие и расслабление 🕊️' },
+  { key: 'growth', labelShort: 'Саморазвитие 🚀', labelLong: 'Саморазвитие и цели 🚀' },
+  { key: 'feminine', labelShort: 'Женственность 🌸', labelLong: 'Женская энергия 🌸' },
 ];
 
 export default function Home() {
@@ -203,7 +203,11 @@ export default function Home() {
   const onFavorite = () => {
     if (!current) return;
     const exists = favorites.some((x) => x.id === current.id);
-    if (!exists) addFavorite({ ...current, category });
+    if (exists) {
+      useAppStore.getState().removeFavorite(current.id);
+    } else {
+      addFavorite({ ...current, category });
+    }
   };
 
   const onHide = () => {
@@ -235,7 +239,7 @@ export default function Home() {
             onClick={() => onSelectCategory(c.key)}
             style={{ cursor: 'pointer', border: category === c.key ? '2px solid var(--accent)' : '1px solid var(--border)' }}
           >
-            {c.label}
+            {c.labelShort}
           </button>
         ))}
       </div>
@@ -252,6 +256,8 @@ export default function Home() {
             onFavorite={onFavorite}
             onHide={onHide}
             disabledNext={showPause}
+            categoryLabel={(categories.find((x) => x.key === category) || {}).labelLong}
+            favorited={!!(current && favorites.some((x) => x.id === current.id))}
           />
           <div className="actions" style={{ marginTop: 12 }}>
             <button className="action action-secondary" onClick={onResetOrder} title="Сбросить порядок показа для этой категории">Сбросить порядок</button>

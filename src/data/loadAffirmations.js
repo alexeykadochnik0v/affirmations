@@ -1,19 +1,9 @@
-// Загрузчик данных аффирмаций из public/affirmations.json
-// Ожидаемый формат файла:
+// Загрузчик аффирмаций из public/affirmations.json
+// Новый ожидаемый формат файла:
 // [
-//   { "id": "love-1", "category": "love", "text": "...", "practice": "...", "image": "https://..." },
+//   { "id": "...", "category": "love", "text": "...", "practice": "...", "расшифровка": "..." },
 //   ...
 // ]
-
-const defaultImages = {
-  love: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=1200&auto=format&fit=crop',
-  money: 'https://images.unsplash.com/photo-1523285367489-d38aec03b7f3?q=80&w=1200&auto=format&fit=crop',
-  health: 'https://images.unsplash.com/photo-1514996937319-344454492b37?q=80&w=1200&auto=format&fit=crop',
-  confidence: 'https://images.unsplash.com/photo-1461280360983-bd93eaa5051b?q=80&w=1200&auto=format&fit=crop',
-  calm: 'https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d?q=80&w=1200&auto=format&fit=crop',
-  growth: 'https://images.unsplash.com/photo-1453539310792-7a24fef4ab1d?q=80&w=1200&auto=format&fit=crop',
-  feminine: 'https://images.unsplash.com/photo-1504198266285-165a9bdcf0f5?q=80&w=1200&auto=format&fit=crop',
-};
 
 function parseCSV(text) {
   // Minimal CSV parser supporting quotes and commas inside quotes
@@ -90,7 +80,7 @@ export async function loadAffirmations() {
         category: r.category || r.cat || r.type,
         text: r.text || r.affirmation || r.affirma || r['аффирмация'],
         practice: r.practice || r['практика'],
-        image: r.image || r.photo || r.img,
+        explanation: r['расшифровка'] || r.explanation,
       }));
       return normalize(mapped);
     }
@@ -111,7 +101,7 @@ function normalize(raw) {
       id,
       text: String(item.text || '').trim(),
       practice: String(item.practice || '').trim(),
-      image: item.image || defaultImages[cat] || defaultImages.love,
+      explanation: String(item['расшифровка'] || item.explanation || '').trim(),
     };
     if (!byCategory[cat]) byCategory[cat] = [];
     byCategory[cat].push(normalized);
