@@ -273,16 +273,31 @@ header .nav a:hover { background: var(--surface); }
   line-height: 1.2;
   min-height: 38px;
 }
-.action:hover { background: color-mix(in oklab, var(--elev) 92%, transparent); }
+/* Only lighten secondary buttons on hover */
+.action:not(.action-primary):hover {
+  background: color-mix(in oklab, var(--elev) 92%, transparent);
+  border-color: var(--border);
+}
 .action-primary {
   background: #111827;
   color: #fff;
   border-color: #111827;
 }
+.action-primary:hover {
+  /* Light theme: invert to light background with dark text for clear hover feedback */
+  background: var(--elev);
+  color: var(--text);
+  border-color: var(--border);
+}
 .action-secondary { background: var(--surface); color: var(--text); }
 [data-theme="dark"] .action-primary {
   background: var(--accent);
   border-color: var(--accent);
+  color: #0b1020;
+}
+[data-theme="dark"] .action-primary:hover {
+  background: color-mix(in oklab, var(--accent) 85%, black 15%);
+  border-color: color-mix(in oklab, var(--accent) 85%, black 15%);
   color: #0b1020;
 }
 @media (max-width: 767.98px) {
@@ -291,4 +306,17 @@ header .nav a:hover { background: var(--surface); }
 }
 @media (max-width: 399.98px) {
   .action { padding: 5px 9px; font-size: 13.5px; }
+}
+
+/* Favorites page layout */
+.fav-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 12px;
+  align-items: start;
+}
+.fav-layout .sidebar { position: relative; }
+.fav-layout .content { min-width: 0; }
+@media (max-width: 767.98px) {
+  .fav-layout { grid-template-columns: 1fr; }
 }
