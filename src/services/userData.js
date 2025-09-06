@@ -59,3 +59,25 @@ export async function removeHiddenRemote(uid, id) {
   const ref = doc(db, 'users', uid, 'hidden', id);
   await deleteDoc(ref);
 }
+
+// One-time migration: push local favorites/hidden to cloud
+export async function migrateLocalToCloud(uid, localFavorites = [], localHidden = []) {
+  const ops = [];
+  // favorites
+  for (const f of localFavorites) {
+    const ref = doc(db, 'users', uid, 'favorites', f.id);
+    ops.push(setDoc(ref, {
+      categoryKey: f.category || f.categoryKey,
+      addedAt: f.addedAt || Date.now(),
+    }, { merge: true }));
+  }
+  // hidden
+  for (const id of localHidden) {
+    const ref = doc(db, 'users', uid, 'hidden', id);
+    ops.push(setDoc(ref, {
+      categoryKey: null,
+      createdAt: Date.now(),
+    }, { merge: true }));
+  }
+  if (ops.length) await Promise.allSettled(ops);
+}

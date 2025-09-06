@@ -9,6 +9,61 @@
   --accent: #111827;
 }
 
+/* Favorites page hero */
+.favorites-hero {
+  position: relative;
+  padding: 32px 16px 16px;
+  margin: 0 auto 12px;
+  max-width: var(--container, 1024px);
+}
+.favorites-hero h1 { font-size: clamp(28px, 5vw, 44px); }
+.favorites-hero-bg {
+  position: absolute;
+  inset: 0;
+  transform: translateY(-8px);
+  background:
+    radial-gradient(72% 100% at 0% 0%, rgba(248, 113, 113, 0.18), transparent 60%),
+    radial-gradient(70% 90% at 100% 0%, rgba(99, 102, 241, 0.18), transparent 60%),
+    linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(0,0,0,0.02) 100%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Sidebar chips */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--elev);
+  border: 1px solid var(--border);
+  color: var(--text);
+  text-align: left; /* do not center */
+}
+.chip.active { background: #111827; color: #fff; border-color: #111827; }
+
+/* Sidebar-only layout: stack chips and left-align content */
+.sidebar .chips { display: grid; grid-auto-rows: minmax(0, auto); gap: 8px; }
+.sidebar .chip { width: 100%; display: flex; align-items: center; justify-content: flex-start; }
+
+/* Segmented control */
+.segmented { display: inline-flex; background: var(--elev); border: 1px solid var(--border); border-radius: 12px; padding: 4px; gap: 4px; }
+.seg { padding: 6px 10px; border-radius: 8px; border: 0; background: transparent; color: var(--text); }
+.seg.active { background: #111827; color: #fff; }
+
+/* Vertical sort list */
+.sort-list { display: grid; gap: 6px; }
+.sort-item { text-align: left; border: 1px solid var(--border); background: var(--elev); color: var(--text); padding: 8px 12px; border-radius: 10px; }
+.sort-item.active { background: #111827; color: #fff; border-color: #111827; }
+
+/* Fav card light category tint */
+.fav-card[data-cat="love"] { border-color: color-mix(in oklab, #ff4d6d 35%, var(--border)); background: color-mix(in oklab, #ff4d6d 6%, var(--surface)); }
+.fav-card[data-cat="money"] { border-color: color-mix(in oklab, #22c55e 35%, var(--border)); background: color-mix(in oklab, #22c55e 6%, var(--surface)); }
+.fav-card[data-cat="health"] { border-color: color-mix(in oklab, #10b981 35%, var(--border)); background: color-mix(in oklab, #10b981 6%, var(--surface)); }
+.fav-card[data-cat="confidence"] { border-color: color-mix(in oklab, #f59e0b 35%, var(--border)); background: color-mix(in oklab, #f59e0b 6%, var(--surface)); }
+.fav-card[data-cat="calm"] { border-color: color-mix(in oklab, #60a5fa 35%, var(--border)); background: color-mix(in oklab, #60a5fa 6%, var(--surface)); }
+.fav-card[data-cat="growth"] { border-color: color-mix(in oklab, #8b5cf6 35%, var(--border)); background: color-mix(in oklab, #8b5cf6 6%, var(--surface)); }
+.fav-card[data-cat="feminine"] { border-color: color-mix(in oklab, #ec4899 35%, var(--border)); background: color-mix(in oklab, #ec4899 6%, var(--surface)); }
+
 [data-theme="dark"] {
   --bg: #0b1020;
   --text: #e5e7eb;

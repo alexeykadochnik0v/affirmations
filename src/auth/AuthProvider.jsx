@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '../services/firebase';
-import { watchFavorites, watchHidden } from '../services/userData';
+import { watchFavorites, watchHidden, migrateLocalToCloud } from '../services/userData';
 import { useAppStore } from '../store/useAppStore';
 
 const AuthContext = createContext({ user: null, loading: true, signOut: async () => {} });
@@ -14,13 +14,23 @@ export function AuthProvider({ children }) {
   const [unsubs, setUnsubs] = useState([]);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
+    const unsub = onAuthStateChanged(auth, async (u) => {
       setUser(u);
       setLoading(false);
       // reset previous subscriptions
       unsubs.forEach((fn) => { try { fn(); } catch {} });
       setUnsubs([]);
       if (u) {
+        // one-time migration of local data to cloud
+        try {
+          const migrated = localStorage.getItem('migrated_to_cloud');
+          if (!migrated) {
+            const localFav = JSON.parse(localStorage.getItem('favorites') || '[]');
+            const localHidden = JSON.parse(localStorage.getItem('hidden') || '[]');
+            await migrateLocalToCloud(u.uid, localFav, localHidden);
+            localStorage.setItem('migrated_to_cloud', '1');
+          }
+        } catch {}
         const offFav = watchFavorites(u.uid, (list) => setFavorites(list));
         const offHidden = watchHidden(u.uid, (list) => setHidden(list));
         setUnsubs([offFav, offHidden]);
