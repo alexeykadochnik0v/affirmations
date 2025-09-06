@@ -1,6 +1,7 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { NavLink, Link, useNavigate } from "react-router-dom";
-import { IconHeart, IconSun, IconMoonStars, IconUser } from "@tabler/icons-react";
+import { IconHeart, IconMoonStars, IconSun, IconUser } from '@tabler/icons-react';
+import DonateModal from '../components/DonateModal';
 import { useAuth } from '../auth/AuthProvider';
 
 const linkStyle = {
@@ -20,6 +21,7 @@ export default function Header() {
   const [avatarFailed, setAvatarFailed] = useState(false);
   const [open, setOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [donateOpen, setDonateOpen] = useState(false);
   const wrapRef = useRef(null);
   const navigate = useNavigate();
   const [theme, setTheme] = useState(() => {
@@ -83,11 +85,16 @@ export default function Header() {
           <NavLink to="/useful" style={({ isActive }) => ({ ...linkStyle, ...(isActive ? activeStyle : {}) })}>полезное</NavLink>
           <NavLink to="/contacts" style={({ isActive }) => ({ ...linkStyle, ...(isActive ? activeStyle : {}) })}>контакты</NavLink>
           <NavLink to="/favorites" style={({ isActive }) => ({ ...linkStyle, ...(isActive ? activeStyle : {}) })}>избранное</NavLink>
-          <NavLink to="/donate" style={({ isActive }) => ({ ...linkStyle, border: "1px solid var(--border)", ...(isActive ? activeStyle : {}) })}>донат</NavLink>
+          <button
+            type="button"
+            className="nav-donate-btn"
+            onClick={(e) => { e.stopPropagation(); setDonateOpen(true); setOpen(false); }}
+          >донат</button>
+          {/* no theme toggle in burger menu per request */}
         </nav>
         <div className="actions" style={{ display: 'flex', gap: 8, marginLeft: 8, position: 'relative' }}>
           {isModerator && (
-            <Link to="/admin" className="action action-secondary" title="Админка" style={{ whiteSpace: 'nowrap' }}>админ</Link>
+            <Link to="/admin" className="action action-secondary pill-mini" title="Админка" style={{ whiteSpace: 'nowrap' }}>админ</Link>
           )}
           {user ? (
             <button
@@ -135,7 +142,7 @@ export default function Header() {
                 </div>
               </div>
               <div className="actions" style={{ marginTop: 10 }}>
-                <Link className="action action-primary" to="/auth" onClick={() => setProfileOpen(false)}>Профиль</Link>
+                <button className="action action-primary" onClick={() => { setProfileOpen(false); navigate('/'); }}>На главную</button>
                 <button className="action action-secondary" onClick={async () => { setProfileOpen(false); await signOut(); navigate('/'); }}>Выйти</button>
               </div>
             </div>
@@ -145,15 +152,18 @@ export default function Header() {
             <span className="line" />
             <span className="line" />
           </button>
+          {/* Desktop theme toggle (icon button). Hidden text in small screens handled by CSS */}
           <button
             aria-label={theme === 'dark' ? 'включить светлую тему' : 'включить тёмную тему'}
             className={`theme theme-${theme}`}
             onClick={() => setTheme(t => (t === 'dark' ? 'light' : 'dark'))}
             title={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
           >
-            {theme === 'dark' ? <IconSun size={20} stroke={2.2} /> : <IconMoonStars size={20} stroke={2.2} />}
+            {theme === 'dark' ? <IconSun size={18} /> : <IconMoonStars size={18} />}
+            <span className="label">{theme === 'dark' ? 'Светлая' : 'Тёмная'}</span>
           </button>
         </div>
+        <DonateModal open={donateOpen} onClose={() => setDonateOpen(false)} qrSrc="/qr.svg" />
       </div>
     </header>
   );

@@ -1,7 +1,7 @@
 // Загрузчик аффирмаций из public/affirmations.json
 // Новый ожидаемый формат файла:
 // [
-//   { "id": "...", "category": "love", "text": "...", "practice": "...", "расшифровка": "..." },
+//   { "id": "...", "category": "love", "text": "...", "practice": "...", "meaning": "..." },
 //   ...
 // ]
 
@@ -80,7 +80,7 @@ export async function loadAffirmations() {
         category: r.category || r.cat || r.type,
         text: r.text || r.affirmation || r.affirma || r['аффирмация'],
         practice: r.practice || r['практика'],
-        explanation: r['расшифровка'] || r.explanation,
+        meaning: r.meaning || r['расшифровка'] || r.explanation,
       }));
       return normalize(mapped);
     }
@@ -101,7 +101,8 @@ function normalize(raw) {
       id,
       text: String(item.text || '').trim(),
       practice: String(item.practice || '').trim(),
-      explanation: String(item['расшифровка'] || item.explanation || '').trim(),
+      // Support new 'meaning' key; keep backward compatibility with old keys
+      explanation: String(item.meaning || item['расшифровка'] || item.explanation || '').trim(),
     };
     if (!byCategory[cat]) byCategory[cat] = [];
     byCategory[cat].push(normalized);

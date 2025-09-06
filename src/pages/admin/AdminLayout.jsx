@@ -15,7 +15,7 @@ export default function AdminLayout() {
         <aside className="sidebar">
           <div className="card" style={{ marginBottom: 12 }}>
             <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>Разделы</div>
-            <nav className="chips">
+            <nav className="chips admin-tabs">
               <NavLink className={({isActive}) => `chip ${isActive?'active':''}`} to="/admin/articles">Статьи</NavLink>
               <NavLink className={({isActive}) => `chip ${isActive?'active':''}`} to="/admin/affirmations">Аффирмации</NavLink>
               <NavLink className={({isActive}) => `chip ${isActive?'active':''}`} to="/admin/roles">Роли</NavLink>

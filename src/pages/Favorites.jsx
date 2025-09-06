@@ -37,10 +37,10 @@ export default function Favorites() {
   // Join favorites with dataset (text/practice) for render and search
   const enriched = useMemo(() => favorites.map((f) => ({ ...byId.get(f.id), ...f })), [favorites, byId]);
 
-  // Build decoding text ("расшифровка") if not provided in dataset
+  // Build decoding text (meaning) using dataset fields; prefer 'explanation'/'meaning' but keep compat with old key
   const decoding = (item) => {
     if (!item) return '';
-    const provided = item['расшифровка'];
+    const provided = item.explanation || item.meaning || item['расшифровка'];
     if (provided && String(provided).trim()) return provided;
     const t = item.text || '';
     const p = item.practice || '';

@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import DonateModal from '../components/DonateModal';
 
 export default function About() {
+  const [donateOpen, setDonateOpen] = useState(false);
   return (
     <div className="landing">
       {/* Hero */}
@@ -79,10 +82,11 @@ export default function About() {
           <p className="cta-sub">Любая поддержка помогает нам развиваться: новые категории, тексты и удобные функции.</p>
           <div className="actions">
             <Link className="action action-primary" to="/">Перейти к практике</Link>
-            <Link className="action action-secondary" to="/donate">Поддержать проект</Link>
+            <button className="action action-secondary" type="button" onClick={() => setDonateOpen(true)}>Поддержать проект</button>
           </div>
         </div>
       </section>
+      <DonateModal open={donateOpen} onClose={() => setDonateOpen(false)} qrSrc="/qr.svg" />
     </div>
   );
 }

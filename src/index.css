@@ -1,3 +1,46 @@
+
+/* Donate modal */
+.donate-modal { width: min(900px, 96vw); background: var(--elev); border: 1px solid var(--border); border-radius: 16px; padding: 16px; }
+
+/* Universal modal backdrop */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: color-mix(in oklab, #000 45%, transparent);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  display: grid;
+  place-items: center;
+  z-index: 1000;
+  animation: backdrop-in .18s ease;
+}
+.donate-modal { animation: modal-in .22s ease forwards; transform: translateY(6px) scale(.98); opacity: 0; }
+
+@keyframes backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes modal-in {
+  from { transform: translateY(6px) scale(.98); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .modal-backdrop, .donate-modal { animation: none !important; transform: none !important; opacity: 1 !important; }
+}
+.donate-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto 1fr; gap: 12px; }
+.donate-logo { background: #eef2ff; border: 1px solid var(--border); border-radius: 8px; display: grid; place-items: center; min-height: 220px; }
+.donate-logo-mark { width: 160px; height: 160px; border-radius: 28px; background: #1d4ed8; position: relative; }
+.donate-logo-mark::before, .donate-logo-mark::after { content: ''; position: absolute; inset: 28px; background: #eef2ff; border-radius: 12px; transform: rotate(45deg); }
+.donate-title h2 { margin: 0; font-size: 28px; line-height: 1.05; letter-spacing: -0.01em; }
+.donate-spacer { border-top: 1px solid var(--border); grid-column: 1 / -1; height: 1px; }
+.donate-qr { display: grid; place-items: end; }
+.donate-qr img { width: 220px; height: 220px; object-fit: contain; border-radius: 12px; border: 1px solid var(--border); background: #fff; }
+@media (max-width: 679.98px) {
+  .donate-grid { grid-template-columns: 1fr; grid-template-rows: auto auto 1px auto; }
+  .donate-qr { place-items: center; }
+}
 /* Theme variables */
 :root {
   --bg: #ffffff;
@@ -7,6 +50,10 @@
   --elev: #ffffff;
   --border: #e5e7eb;
   --accent: #111827;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 /* Favorites page hero */
@@ -628,6 +675,30 @@ header .nav a {
   border-radius: 8px;
 }
 
+/* Donate button in nav looks like link */
+header .nav .nav-donate-btn {
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+header .nav .nav-donate-btn:hover { background: var(--surface); }
+
+/* Theme toggle row inside burger menu */
+header .nav .nav-theme {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+header .nav .nav-theme:hover { background: var(--surface); }
+
 header .nav a:hover {
   background: var(--surface);
 }
@@ -777,6 +848,14 @@ header .nav a:hover {
   border-color: #111827;
 }
 
+/* Compact pill for small header buttons (e.g., admin). Overrides mobile min-height */
+.action.pill-mini {
+  padding: 4px 8px;
+  font-size: 12.5px;
+  min-height: 28px;
+  border-radius: 10px;
+}
+
 .action-primary:hover {
   /* Light theme: invert to light background with dark text for clear hover feedback */
   background: var(--elev);
@@ -811,6 +890,14 @@ header .nav a:hover {
     font-size: 15px;
     border-radius: 10px;
     min-height: 44px;
+  }
+
+  /* keep pill-mini compact on mobile too */
+  .action.pill-mini {
+    padding: 4px 8px;
+    font-size: 12.5px;
+    min-height: 28px !important;
+    border-radius: 10px;
   }
 
   /* Stretch primary actions in card bottom area for easier tapping */
@@ -852,6 +939,12 @@ header .nav a:hover {
 .admin-list { display: grid; grid-template-columns: 1fr; gap: 10px; }
 .admin-item { display: grid; grid-template-columns: 120px 1fr auto; gap: 10px; align-items: center; }
 .admin-thumb { width: 120px; height: 70px; object-fit: cover; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); }
+/* Admin tabs (Разделы) */
+.admin-tabs { display: grid; grid-template-columns: 1fr; gap: 8px; }
+.admin-tabs .chip { min-height: 32px; padding: 6px 10px; font-size: 13px; border-radius: 8px; justify-content: center; }
+@media (max-width: 599.98px) {
+  .admin-tabs { grid-template-columns: repeat(2, 1fr); }
+}
 @media (max-width: 1023.98px) {
   .admin-item { grid-template-columns: 100px 1fr; }
   .admin-item .actions { grid-column: 1 / -1; }
