@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { NavLink, Link } from "react-router-dom";
-import { IconHeart, IconSun, IconMoonStars } from "@tabler/icons-react";
+import { NavLink, Link, useNavigate } from "react-router-dom";
+import { IconHeart, IconSun, IconMoonStars, IconUser } from "@tabler/icons-react";
+import { useAuth } from '../auth/AuthProvider';
 
 const linkStyle = {
   padding: "8px 12px",
@@ -15,8 +16,12 @@ const activeStyle = {
 };
 
 export default function Header() {
+  const { user, signOut } = useAuth();
+  const [avatarFailed, setAvatarFailed] = useState(false);
   const [open, setOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const wrapRef = useRef(null);
+  const navigate = useNavigate();
   const [theme, setTheme] = useState(() => {
     try {
       const stored = localStorage.getItem('theme');
@@ -53,12 +58,12 @@ export default function Header() {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-  // click outside to close
+  // click outside to close menus
   useEffect(() => {
-    if (!open) return;
+    if (!open && !profileOpen) return;
     const onDocClick = (e) => {
       if (!wrapRef.current) return;
-      if (!wrapRef.current.contains(e.target)) setOpen(false);
+      if (!wrapRef.current.contains(e.target)) { setOpen(false); setProfileOpen(false); }
     };
     document.addEventListener('mousedown', onDocClick);
     document.addEventListener('touchstart', onDocClick, { passive: true });
@@ -66,7 +71,7 @@ export default function Header() {
       document.removeEventListener('mousedown', onDocClick);
       document.removeEventListener('touchstart', onDocClick);
     };
-  }, [open]);
+  }, [open, profileOpen]);
   return (
     <header style={{ position: "sticky", top: 0, zIndex: 10 }}>
       <div ref={wrapRef} className="container" style={{ display: "flex", alignItems: "center", justifyContent: 'space-between' }}>
@@ -80,7 +85,58 @@ export default function Header() {
           <NavLink to="/favorites" style={({ isActive }) => ({ ...linkStyle, ...(isActive ? activeStyle : {}) })}>избранное</NavLink>
           <NavLink to="/donate" style={({ isActive }) => ({ ...linkStyle, border: "1px solid var(--border)", ...(isActive ? activeStyle : {}) })}>донат</NavLink>
         </nav>
-        <div className="actions" style={{ display: 'flex', gap: 8, marginLeft: 8 }}>
+        <div className="actions" style={{ display: 'flex', gap: 8, marginLeft: 8, position: 'relative' }}>
+          {user ? (
+            <button
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded={profileOpen}
+              className="profile-btn"
+              onClick={() => setProfileOpen(v => !v)}
+              title="Профиль"
+            >
+              {user.photoURL && !avatarFailed ? (
+                <img
+                  src={`${user.photoURL}${user.photoURL.includes('?') ? '&' : '?'}sz=64`}
+                  alt="avatar"
+                  width={40}
+                  height={40}
+                  style={{ borderRadius: 999 }}
+                  referrerPolicy="no-referrer"
+                  loading="lazy"
+                  onError={() => setAvatarFailed(true)}
+                />
+              ) : (
+                <IconUser size={22} stroke={2.2} />
+              )}
+            </button>
+          ) : (
+            <Link to="/auth" aria-label="Войти" className="profile-btn" title="Войти"><IconUser size={22} stroke={2.2} /></Link>
+          )}
+          {user && profileOpen && (
+            <div className="profile-menu" role="menu" aria-label="Профиль">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {user.photoURL && !avatarFailed ? (
+                  <img
+                    src={`${user.photoURL}${user.photoURL.includes('?') ? '&' : '?'}sz=128`}
+                    alt="avatar"
+                    width={40}
+                    height={40}
+                    style={{ borderRadius: 999 }}
+                    referrerPolicy="no-referrer"
+                  />
+                ) : <IconUser size={22} stroke={2.2} />}
+                <div>
+                  <div style={{ fontWeight: 800 }}>Вы авторизованы</div>
+                  <div>{user.displayName || 'Пользователь'}</div>
+                </div>
+              </div>
+              <div className="actions" style={{ marginTop: 10 }}>
+                <Link className="action action-primary" to="/auth" onClick={() => setProfileOpen(false)}>Профиль</Link>
+                <button className="action action-secondary" onClick={async () => { setProfileOpen(false); await signOut(); navigate('/'); }}>Выйти</button>
+              </div>
+            </div>
+          )}
           <button aria-label={open ? 'закрыть меню' : 'открыть меню'} aria-haspopup="menu" aria-expanded={open} aria-controls="main-nav" onClick={() => setOpen(v => !v)} className={`burger ${open ? 'open' : ''}`}>
             <span className="line" />
             <span className="line" />

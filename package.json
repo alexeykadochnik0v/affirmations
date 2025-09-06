@@ -14,6 +14,8 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@tabler/icons-react": "^3.34.1",
+    "firebase": "^10.14.1",
+    "firebaseui": "^6.1.0",
     "framer-motion": "^12.23.12",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

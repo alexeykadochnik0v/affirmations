@@ -6,6 +6,7 @@ import About from './pages/About'
 import Useful from './pages/Useful'
 import Contacts from './pages/Contacts'
 import Donate from './pages/Donate'
+import Auth from './pages/Auth'
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
           <Route path="/useful" element={<Useful />} />
           <Route path="/contacts" element={<Contacts />} />
           <Route path="/donate" element={<Donate />} />
+          <Route path="/auth" element={<Auth />} />
         </Routes>
       </main>
     </>

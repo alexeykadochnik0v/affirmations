@@ -9,6 +9,16 @@ export const useAppStore = create((set, get) => ({
     try { return JSON.parse(localStorage.getItem('hidden')) || []; } catch { return []; }
   })(),
 
+  setFavorites: (list) => set(() => {
+    try { localStorage.setItem('favorites', JSON.stringify(list)); } catch {}
+    return { favorites: list };
+  }),
+
+  setHidden: (list) => set(() => {
+    try { localStorage.setItem('hidden', JSON.stringify(list)); } catch {}
+    return { hidden: list };
+  }),
+
   addFavorite: (item) => set((s) => {
     // prevent duplicates by id
     if (s.favorites.some((x) => x.id === item.id)) return {};

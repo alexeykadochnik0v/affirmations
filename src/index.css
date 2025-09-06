@@ -138,6 +138,44 @@ header {
   border-bottom: 1px solid var(--border);
 }
 
+/* Header profile avatar button */
+.profile-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  border-radius: 999px;
+  overflow: hidden; /* clip avatar exactly to circle */
+}
+.profile-btn:hover { background: color-mix(in oklab, var(--elev) 85%, transparent); }
+
+/* Profile dropdown menu */
+.profile-menu {
+  position: absolute;
+  top: 48px;
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px;
+  box-shadow: 0 12px 24px rgba(0,0,0,.12);
+  width: 280px;
+  z-index: 20;
+}
+/* Compact buttons inside profile dropdown */
+.profile-menu .actions { gap: 6px; }
+.profile-menu .action {
+  min-height: 32px;
+  padding: 6px 10px;
+  font-size: 14px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
 :root {
   font-family: "Golos Text", Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -458,10 +496,15 @@ header .nav a:hover {
   background: var(--surface);
   color: var(--text);
   border: 1px solid var(--border);
+  border-radius: 12px;
   padding: 8px 12px;
-  border-radius: 10px;
-  line-height: 1.2;
-  min-height: 38px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  min-height: 36px;
+  vertical-align: middle;
 }
 
 /* Only lighten secondary buttons on hover */

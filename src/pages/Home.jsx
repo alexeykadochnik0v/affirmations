@@ -4,6 +4,8 @@ import AffirmationCard from '../components/AffirmationCard';
 import { affirmations as localAffirmations } from '../data/affirmations';
 import { loadAffirmations } from '../data/loadAffirmations';
 import { useAppStore } from '../store/useAppStore';
+import { useAuth } from '../auth/AuthProvider';
+import { addFavoriteRemote, removeFavoriteRemote, addHiddenRemote } from '../services/userData';
 
 const categories = [
   { key: 'love', labelShort: 'Любовь ❤️', labelLong: 'Любовь и отношения ❤️' },
@@ -16,6 +18,7 @@ const categories = [
 ];
 
 export default function Home() {
+  const { user } = useAuth();
   const [category, setCategory] = useState(() => {
     try { return localStorage.getItem('selectedCategory') || 'love'; } catch { return 'love'; }
   });
@@ -205,14 +208,17 @@ export default function Home() {
     const exists = favorites.some((x) => x.id === current.id);
     if (exists) {
       useAppStore.getState().removeFavorite(current.id);
+      if (user) { removeFavoriteRemote(user.uid, current.id).catch(() => {}); }
     } else {
       addFavorite({ ...current, category });
+      if (user) { addFavoriteRemote(user.uid, { ...current, category }).catch(() => {}); }
     }
   };
 
   const onHide = () => {
     if (!current) return;
     hideAffirmation(current.id);
+    if (user) { addHiddenRemote(user.uid, current.id, category).catch(() => {}); }
     // удалим из очереди, оставив индекс — следующая встанет на его место
     setQueue((q) => q.filter((id) => id !== current.id));
   };
