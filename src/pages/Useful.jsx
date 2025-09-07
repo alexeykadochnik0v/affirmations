@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { articles as seed } from '../data/articles';
+import { listPublishedArticles } from '../services/articles';
 
-const allTags = Array.from(new Set(seed.flatMap((a) => a.tags))).sort((a,b)=>a.localeCompare(b));
+// tags will be computed from loaded data below
 const fmtDate = (ts) => {
   try { return new Date(ts).toLocaleDateString('ru-RU', { year: 'numeric', month: 'long', day: 'numeric' }); } catch { return ''; }
 };
@@ -14,11 +15,39 @@ const readMinutes = (a) => {
 };
 
 export default function Useful() {
+  const [items, setItems] = useState(seed);
+  const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState(() => { try { return localStorage.getItem('useful:q') || ''; } catch { return ''; } });
   const [tag, setTag] = useState(() => { try { return localStorage.getItem('useful:tag') || 'all'; } catch { return 'all'; } });
   const [sort, setSort] = useState(() => { try { return localStorage.getItem('useful:sort') || 'new'; } catch { return 'new'; } }); // new | old | rand
   const [randKey, setRandKey] = useState(0); // to reshuffle on demand
   const [limit, setLimit] = useState(6);
+
+  // load from Firestore (published) with fallback to local seed
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      setLoading(true);
+      try {
+        const { items } = await listPublishedArticles(100);
+        if (mounted && items && items.length) {
+          // Normalize createdAt for formatting (Firestore timestamp -> ms)
+          const normalized = items.map(a => ({
+            ...a,
+            createdAt: a.createdAt?.seconds ? a.createdAt.seconds * 1000 : a.createdAt,
+          }));
+          setItems(normalized);
+          setLoading(false);
+          return;
+        }
+      } catch {}
+      if (mounted) {
+        setItems(seed);
+        setLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   // persist filters
   useEffect(() => { try { localStorage.setItem('useful:q', query); } catch {} }, [query]);
@@ -27,7 +56,7 @@ export default function Useful() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    let base = seed;
+    let base = items;
     if (tag !== 'all') base = base.filter((a) => (a.tags || []).includes(tag));
     if (q) {
       base = base.filter((a) =>
@@ -54,13 +83,15 @@ export default function Useful() {
       base = arr;
     }
     return base;
-  }, [query, tag, sort, randKey]);
+  }, [items, query, tag, sort, randKey]);
 
   const counters = useMemo(() => {
-    const map = { all: seed.length };
-    seed.forEach((a)=> (a.tags||[]).forEach((t)=> { map[t] = (map[t]||0)+1; }));
+    const map = { all: items.length };
+    items.forEach((a)=> (a.tags||[]).forEach((t)=> { map[t] = (map[t]||0)+1; }));
     return map;
-  }, []);
+  }, [items]);
+
+  const allTags = useMemo(() => Array.from(new Set(items.flatMap((a)=>a.tags||[]))).sort((a,b)=>a.localeCompare(b)), [items]);
 
   return (
     <div>
@@ -68,7 +99,7 @@ export default function Useful() {
       <div className="favorites-hero useful-hero">
         <div className="favorites-hero-bg" aria-hidden="true" />
         <h1 style={{ marginBottom: 4 }}>Полезное</h1>
-        <p className="muted" style={{ margin: 0 }}>Подборка статей и практик • {filtered.length}/{seed.length}</p>
+        <p className="muted" style={{ margin: 0 }}>Подборка статей и практик • {filtered.length}/{items.length}</p>
       </div>
 
       <div className="fav-layout">
@@ -118,7 +149,18 @@ export default function Useful() {
         </aside>
 
         <section className="content">
-          {filtered.length === 0 ? (
+          {loading ? (
+            <div className="articles-grid">
+              {Array.from({ length: 6 }).map((_,i)=> (
+                <article key={i} className="card article-card" style={{ overflow: 'hidden' }}>
+                  <div className="skeleton skeleton-thumb" />
+                  <div className="skeleton skeleton-title" style={{ marginTop: 8, width: '60%' }} />
+                  <div className="skeleton skeleton-text" style={{ marginTop: 6, width: '90%' }} />
+                  <div className="skeleton skeleton-text" style={{ marginTop: 6, width: '70%' }} />
+                </article>
+              ))}
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="card placeholder" style={{ marginTop: 0 }}>
               <p>Ничего не найдено. Попробуйте изменить запрос или теги.</p>
             </div>
