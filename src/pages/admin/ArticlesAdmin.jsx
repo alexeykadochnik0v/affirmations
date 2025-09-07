@@ -2,8 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { listArticles, createArticleDraft, updateArticle, publishArticle, unpublishArticle, deleteArticle } from '../../services/articles';
 import { articles as seed } from '../../data/articles';
-import { storage } from '../../services/firebase';
-import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -20,6 +18,15 @@ export default function ArticlesAdmin() {
   const [importAs, setImportAs] = useState('draft'); // 'draft' | 'published'
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showPreview, setShowPreview] = useState(true);
+  const ENV_CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+  const ENV_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+  const [cloudOverride, setCloudOverride] = useState(() => { try { return localStorage.getItem('cloud:cn') || ''; } catch { return ''; } });
+  const [presetOverride, setPresetOverride] = useState(() => { try { return localStorage.getItem('cloud:preset') || ''; } catch { return ''; } });
+  const CLOUDINARY_CLOUD = ENV_CLOUD || cloudOverride;
+  const CLOUDINARY_PRESET = ENV_PRESET || presetOverride;
+  const hasCloudinary = !!(CLOUDINARY_CLOUD && CLOUDINARY_PRESET);
+  useEffect(() => { try { localStorage.setItem('cloud:cn', cloudOverride); } catch {} }, [cloudOverride]);
+  useEffect(() => { try { localStorage.setItem('cloud:preset', presetOverride); } catch {} }, [presetOverride]);
 
   const load = async () => {
     const { items } = await listArticles({ status });
@@ -161,28 +168,43 @@ export default function ArticlesAdmin() {
               <div className="form-row">
               <div className="form-inline" style={{ alignItems: 'stretch' }}>
                 <input className="form-input" placeholder="Ссылка на картинку (cover)" value={editing?.cover||''} onChange={(e)=>setEditing((s)=>({...s, cover: e.target.value}))} />
-                <label className="action action-secondary" style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
-                  Загрузить файл
-                  <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e)=>{
-                    const file = e.target.files?.[0];
-                    if (!file || !user?.uid) return;
-                    const path = `articles/${user.uid}/${Date.now()}-${file.name}`;
-                    const ref = storageRef(storage, path);
-                    const task = uploadBytesResumable(ref, file);
-                    setUploadProgress(0);
-                    task.on('state_changed', (snap)=>{
-                      const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
-                      setUploadProgress(pct);
-                    }, (err)=>{
-                      alert('Ошибка загрузки: ' + (err?.message||err));
-                    }, async ()=>{
-                      const url = await getDownloadURL(task.snapshot.ref);
-                      setEditing((s)=> ({...s, cover: url}));
-                    });
-                  }} />
+                <label className={`action action-secondary ${!hasCloudinary ? 'disabled' : ''}`} style={{ display: 'inline-flex', alignItems: 'center', cursor: hasCloudinary ? 'pointer' : 'not-allowed', opacity: hasCloudinary ? 1 : 0.6 }} title={hasCloudinary ? 'Загрузить файл в Cloudinary' : 'Заполните VITE_CLOUDINARY_* в .env и перезапустите dev-сервер'}>
+                  Загрузить (Cloudinary)
+                  <input type="file" accept="image/*" style={{ display: 'none' }} disabled={!hasCloudinary} onChange={async (e)=>{
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      try {
+                        setUploadProgress(1);
+                        const fd = new FormData();
+                        fd.append('file', file);
+                        fd.append('upload_preset', CLOUDINARY_PRESET);
+                        const resp = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, {
+                          method: 'POST',
+                          body: fd,
+                        });
+                        if (!resp.ok) throw new Error('Cloudinary upload failed');
+                        const data = await resp.json();
+                        const url = data.secure_url || data.url;
+                        if (!url) throw new Error('Нет URL от Cloudinary');
+                        setEditing((s)=> ({...s, cover: url}));
+                        setUploadProgress(100);
+                      } catch (err) {
+                        alert('Ошибка загрузки в Cloudinary: ' + (err?.message || err));
+                        setUploadProgress(0);
+                      }
+                    }} />
                 </label>
               </div>
               {uploadProgress>0 && uploadProgress<100 ? (<div className="muted" style={{ fontSize: 12 }}>Загрузка: {uploadProgress}%</div>) : null}
+              <div className="muted" style={{ fontSize: 12 }}>
+                Cloudinary: {hasCloudinary ? 'готов' : 'не настроен'} (используем cloud="{CLOUDINARY_CLOUD||'-'}", preset="{CLOUDINARY_PRESET||'-'}")
+              </div>
+              {!ENV_CLOUD || !ENV_PRESET ? (
+                <div className="form-inline" style={{ gap: 6 }}>
+                  <input className="form-input" placeholder="Cloud name" style={{ width: 180 }} value={cloudOverride} onChange={(e)=>setCloudOverride(e.target.value)} />
+                  <input className="form-input" placeholder="Upload preset" style={{ width: 200 }} value={presetOverride} onChange={(e)=>setPresetOverride(e.target.value)} />
+                </div>
+              ) : null}
               {editing?.cover ? <img src={editing.cover} alt="preview" style={{ width: '100%', maxHeight: 240, objectFit: 'cover', borderRadius: 10, border: '1px solid var(--border)' }} /> : null}
               <input className="form-input" placeholder="Название" value={editing?.title||''} onChange={(e)=>setEditing((s)=>({...s, title: e.target.value}))} />
               <textarea className="form-input" placeholder="Описание (summary)" rows={3} value={editing?.summary||''} onChange={(e)=>setEditing((s)=>({...s, summary: e.target.value}))} />
