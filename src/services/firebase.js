@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
@@ -14,5 +14,8 @@ const firebaseConfig = {
 
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
+// Make auth state persist between tabs/reloads and help diagnose env mismatches
+setPersistence(auth, browserLocalPersistence).catch(() => {});
+try { console.log('[firebase] using project', firebaseConfig.projectId, 'domain', firebaseConfig.authDomain); } catch {}
 export const db = getFirestore(app);
 export const storage = getStorage(app);

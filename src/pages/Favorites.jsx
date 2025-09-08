@@ -4,6 +4,7 @@ import { affirmations as localAffirmations } from '../data/affirmations';
 import { loadAffirmations } from '../data/loadAffirmations';
 import { useAuth } from '../auth/AuthProvider';
 import { removeFavoriteRemote } from '../services/userData';
+import { listMy } from '../services/affirmations';
 
 export default function Favorites() {
   const favorites = useAppStore((s) => s.favorites);
@@ -14,9 +15,24 @@ export default function Favorites() {
   const [data, setData] = useState(localAffirmations);
   useEffect(() => {
     let mounted = true;
-    loadAffirmations().then((remote) => { if (mounted && remote) setData(remote); });
+    (async () => {
+      try {
+        const remote = await loadAffirmations();
+        if (mounted && remote) setData(remote);
+      } catch {}
+      // Подтянем персональные аффирмации пользователя, чтобы избранное из "Моих" корректно отображалось
+      try {
+        if (user?.uid) {
+          const { items } = await listMy(user.uid, 500);
+          if (mounted) {
+            const normalized = items.map((it) => ({ id: it.id, text: it.text || '', practice: it.practice || '', explanation: it.meaning || '' }));
+            setData((prev) => ({ ...prev, my: normalized }));
+          }
+        }
+      } catch {}
+    })();
     return () => { mounted = false; };
-  }, []);
+  }, [user?.uid]);
 
   // Build quick lookup map by id across all categories
   const byId = useMemo(() => {
@@ -120,7 +136,7 @@ export default function Favorites() {
           <div className="card" style={{ marginBottom: 12 }}>
             <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>Категории</div>
             <div className="chips">
-              {['all','love','money','health','confidence','calm','growth','feminine'].map((k) => (
+              {['all','love','money','health','confidence','calm','growth','feminine','my'].map((k) => (
                 <button
                   key={k}
                   className={`chip ${cat === k ? 'active' : ''}`}

@@ -1,5 +1,6 @@
 // Страница с категориями и карточкой аффирмации
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import AffirmationCard from '../components/AffirmationCard';
 import { affirmations as localAffirmations } from '../data/affirmations';
 import { loadAffirmations } from '../data/loadAffirmations';
@@ -439,48 +440,59 @@ export default function Home() {
       {showAi && (
         <div aria-modal="true" role="dialog" style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'grid', placeItems: 'center', background: 'rgba(0,0,0,0.45)' }}>
           <div className="card ai-modal" style={{ width: 'min(720px, 96vw)', padding: 20 }}>
-            <h2 style={{ margin: '0 0 8px 0', fontSize: 20 }}>Создать аффирмацию на свою тему</h2>
-            <p className="muted" style={{ marginTop: 0 }}>Шаг 1. Выберите категорию • Шаг 2. Опишите запрос • Шаг 3. Создайте</p>
-            <div className="form-row">
-              <label className="section-title">Категория</label>
-              <div className="chips">
-                {categories.map((c) => (
-                  <button key={c.key} className={`chip chip-compact ${aiCategory===c.key?'active':''}`} onClick={()=>setAiCategory(c.key)}>{c.labelShort}</button>
-                ))}
-              </div>
-            </div>
-            <div className="form-row">
-              <label className="section-title">Ваш запрос</label>
-              <textarea
-                className="form-input ai-textarea"
-                rows={8}
-                style={{ resize: 'vertical', minHeight: 140, fontSize: 15.5, lineHeight: 1.55, padding: '14px 16px' }}
-                value={aiPrompt}
-                onChange={(e)=>setAiPrompt(e.target.value)}
-                placeholder={`Опишите контекст, желаемое состояние и стиль. Например: «Аффирмация про уверенность в создании сайтов как фрилансер — меньше сомнений, больше фокуса и радости от процесса».`}
-              />
-              <div className="muted" style={{ fontSize: 12 }}>
-                Подсказка: напишите контекст (что происходит), желаемое состояние (что хотите чувствовать/делать), и ограничения (без токсичной позитивности, современный язык).
-              </div>
-            </div>
-            <div className="muted" style={{ fontSize: 12 }}>
-              {user?.uid ? (
-                isUnlimited ? 'У вас расширенный аккаунт (PRO/ADMIN): без лимитов ✨' : `Доступно сегодня: ${Math.max(0, DAILY_LIMIT - usedToday)} из ${DAILY_LIMIT}`
-              ) : 'Войдите, чтобы создавать свои аффирмации'}
-            </div>
-            {aiError ? <div className="card" style={{ border: '1px solid #fecaca', background: '#fff1f2', color: '#7f1d1d' }}>{aiError}</div> : null}
-            {aiLoading && (
-              <div className="card" style={{ marginTop: 8, padding: 12, background: 'var(--elev)', border: '1px dashed var(--border)' }}>
-                <div style={{ fontWeight: 600, marginBottom: 6 }}>Создаём вашу аффирмацию…</div>
-                <div style={{ height: 8, background: 'var(--surface)', borderRadius: 6, overflow: 'hidden' }}>
-                  <div style={{ width: '100%', height: '100%', background: 'linear-gradient(90deg, #b3e5fc 0%, #81d4fa 50%, #b3e5fc 100%)', backgroundSize: '200% 100%', animation: 'shine 1.2s infinite linear' }} />
+            {user?.uid ? (
+              <>
+                <h2 style={{ margin: '0 0 8px 0', fontSize: 20 }}>Создать аффирмацию на свою тему</h2>
+                <p className="muted" style={{ marginTop: 0 }}>Шаг 1. Выберите категорию • Шаг 2. Опишите запрос • Шаг 3. Создайте</p>
+                <div className="form-row">
+                  <label className="section-title">Категория</label>
+                  <div className="chips">
+                    {categories.map((c) => (
+                      <button key={c.key} className={`chip chip-compact ${aiCategory===c.key?'active':''}`} onClick={()=>setAiCategory(c.key)}>{c.labelShort}</button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+                <div className="form-row">
+                  <label className="section-title">Ваш запрос</label>
+                  <textarea
+                    className="form-input ai-textarea"
+                    rows={8}
+                    style={{ resize: 'vertical', minHeight: 140, fontSize: 15.5, lineHeight: 1.55, padding: '14px 16px' }}
+                    value={aiPrompt}
+                    onChange={(e)=>setAiPrompt(e.target.value)}
+                    placeholder={`Опишите контекст, желаемое состояние и стиль. Например: «Аффирмация про уверенность в создании сайтов как фрилансер — меньше сомнений, больше фокуса и радости от процесса».`}
+                  />
+                  <div className="muted" style={{ fontSize: 12 }}>
+                    Подсказка: напишите контекст (что происходит), желаемое состояние (что хотите чувствовать/делать), и ограничения (без токсичной позитивности, современный язык).
+                  </div>
+                </div>
+                <div className="muted" style={{ fontSize: 12 }}>
+                  {isUnlimited ? 'У вас расширенный аккаунт (PRO/ADMIN): без лимитов ✨' : `Доступно сегодня: ${Math.max(0, DAILY_LIMIT - usedToday)} из ${DAILY_LIMIT}`}
+                </div>
+                {aiError ? <div className="card" style={{ border: '1px solid #fecaca', background: '#fff1f2', color: '#7f1d1d' }}>{aiError}</div> : null}
+                {aiLoading && (
+                  <div className="card" style={{ marginTop: 8, padding: 12, background: 'var(--elev)', border: '1px dashed var(--border)' }}>
+                    <div style={{ fontWeight: 600, marginBottom: 6 }}>Создаём вашу аффирмацию…</div>
+                    <div style={{ height: 8, background: 'var(--surface)', borderRadius: 6, overflow: 'hidden' }}>
+                      <div style={{ width: '100%', height: '100%', background: 'linear-gradient(90deg, #b3e5fc 0%, #81d4fa 50%, #b3e5fc 100%)', backgroundSize: '200% 100%', animation: 'shine 1.2s infinite linear' }} />
+                    </div>
+                  </div>
+                )}
+                <div className="actions" style={{ marginTop: 12, justifyContent: 'flex-end', gap: 8 }}>
+                  <button className="action action-secondary" onClick={()=>{ setShowAi(false); }}>Отмена</button>
+                  <button className="action action-primary" onClick={onCreateAi} disabled={aiLoading || (!isUnlimited && usedToday >= DAILY_LIMIT)}>{aiLoading ? 'Создаём…' : 'Создать'}</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 style={{ margin: '0 0 8px 0', fontSize: 20 }}>Войдите, чтобы создать аффирмацию</h2>
+                <p className="muted" style={{ marginTop: 0 }}>Авторизация нужна, чтобы сохранить вашу аффирмацию во вкладке «Мои».</p>
+                <div className="actions" style={{ marginTop: 12, justifyContent: 'flex-end', gap: 8 }}>
+                  <button className="action action-secondary" onClick={()=>{ setShowAi(false); }}>Отмена</button>
+                  <Link className="action action-primary" to="/auth">Войти</Link>
+                </div>
+              </>
             )}
-            <div className="actions" style={{ marginTop: 12, justifyContent: 'flex-end', gap: 8 }}>
-              <button className="action action-secondary" onClick={()=>{ setShowAi(false); }}>Отмена</button>
-              <button className="action action-primary" onClick={onCreateAi} disabled={aiLoading || !user?.uid || (!isUnlimited && usedToday >= DAILY_LIMIT)}>{aiLoading ? 'Создаём…' : 'Создать'}</button>
-            </div>
           </div>
         </div>
       )}

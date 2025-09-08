@@ -868,6 +868,7 @@ header .nav a:hover {
   border: 1px solid var(--border);
   background: var(--elev);
   color: var(--text);
+  caret-color: var(--text);
   border-radius: 12px;
   padding: 14px 16px;
   box-shadow: 0 1px 0 rgba(0,0,0,.02) inset;
@@ -884,6 +885,67 @@ header .nav a:hover {
 }
 
 @keyframes shine { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+/* Responsive improvements for AI modal */
+@media (max-width: 767.98px) {
+  /* Turn modal into a comfortable mobile sheet */
+  .ai-modal {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    margin: 0;
+    border-radius: 0 !important;
+    display: flex;
+    flex-direction: column;
+    padding: 14px !important;
+    /* reserve space under content so fixed actions do not overlap input */
+    padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px)) !important;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  /* Make content scroll inside */
+  .ai-modal .form-row,
+  .ai-modal .ai-textarea {
+    width: 100%;
+  }
+
+  .ai-modal .ai-textarea {
+    min-height: 120px;
+    font-size: 16px;
+    color: var(--text);
+    caret-color: var(--text);
+  }
+
+  /* Chips block should wrap nicely */
+  .ai-modal .chips {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Actions: make them big and easy to tap; pin to the real bottom */
+  .ai-modal .actions {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: color-mix(in oklab, var(--elev) 96%, transparent);
+    border-top: 1px solid var(--border);
+    padding: 10px 14px calc(12px + env(safe-area-inset-bottom, 0px));
+    gap: 8px;
+    display: grid;
+    grid-template-columns: 1fr;
+    z-index: 1001; /* above modal content */
+    box-shadow: 0 -8px 18px rgba(0,0,0,.08);
+  }
+
+  .ai-modal .actions .action {
+    min-height: 48px;
+    font-size: 16px;
+    width: 100%;
+  }
+}
 
 .card.placeholder p {
   color: var(--muted);
