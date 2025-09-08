@@ -6,7 +6,7 @@ import { loadAffirmations } from '../data/loadAffirmations';
 import { useAppStore } from '../store/useAppStore';
 import { useAuth } from '../auth/AuthProvider';
 import { addFavoriteRemote, removeFavoriteRemote, addHiddenRemote, watchUserRole } from '../services/userData';
-import { listPublishedByCategory, createAndPublish } from '../services/affirmations';
+import { listPublishedByCategory, createAndPublish, createPending, listMy, addMy } from '../services/affirmations';
 import { generateAffirmation, getOpenAIApiKey, setOpenAIApiKey, getDailyUsed, incDailyUsed } from '../services/ai';
 
 const categories = [
@@ -44,6 +44,8 @@ export default function Home() {
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [sentPublicIds, setSentPublicIds] = useState([]); // ids from "Мои", уже отправленные на модерацию
   const DAILY_LIMIT = 3;
   const usedToday = getDailyUsed();
   const [role, setRole] = useState(null); // { role: 'pro' | 'admin' | 'user' } | null
@@ -84,20 +86,23 @@ export default function Home() {
 
   useEffect(() => {
     let mounted = true;
-    // 1) сначала пробуем загрузить опубликованные из Firestore для текущей категории
+    // 1) если вкладка "Мои" — грузим персональные
     (async () => {
       try {
-        const { items } = await listPublishedByCategory(category, 200);
-        if (mounted && items && items.length) {
-          // нормализуем под рендер: explanation <- meaning
-          const normalized = items.map((it) => ({
-            id: it.id,
-            text: it.text || '',
-            practice: it.practice || '',
-            explanation: it.meaning || it.explanation || '',
-          }));
-          setData((prev) => ({ ...prev, [category]: normalized }));
-          return; // есть данные из Firestore — хватит
+        if (category === 'my' && user?.uid) {
+          const { items } = await listMy(user.uid, 200);
+          if (mounted) {
+            const normalized = items.map((it) => ({ id: it.id, text: it.text || '', practice: it.practice || '', explanation: it.meaning || '' }));
+            setData((prev) => ({ ...prev, my: normalized }));
+          }
+          return;
+        } else if (category !== 'my') {
+          const { items } = await listPublishedByCategory(category, 200);
+          if (mounted && items && items.length) {
+            const normalized = items.map((it) => ({ id: it.id, text: it.text || '', practice: it.practice || '', explanation: it.meaning || it.explanation || '' }));
+            setData((prev) => ({ ...prev, [category]: normalized }));
+            return;
+          }
         }
       } catch {}
       // 2) иначе — загрузим JSON (глобально), он уже распределён по категориям
@@ -107,7 +112,7 @@ export default function Home() {
       } catch {}
     })();
     return () => { mounted = false; };
-  }, [category]);
+  }, [category, user?.uid]);
 
   const list = data[category] || [];
   const visible = useMemo(() => list.filter((i) => !hidden.includes(i.id)), [list, hidden]);
@@ -237,6 +242,32 @@ export default function Home() {
     setIndex((i) => (i + 1) % orderedVisible.length);
   };
 
+  // Отправить текущую персональную аффирмацию в общий список (на модерацию)
+  const onSubmitPublic = async () => {
+    if (category !== 'my' || !current || !user?.uid) return;
+    try {
+      // нормализуем заголовок из текущего элемента
+      const toWords = (s) => (s || '').toString().trim().split(/\s+/).filter(Boolean);
+      const clampWords = (arr, n=6) => arr.slice(0, n).join(' ');
+      const titleSource = (current.title || current.text || '').toString();
+      const words = toWords(titleSource);
+      const titleNorm = words.length ? (words.length>6 ? clampWords(words,6)+'…' : words.join(' ')) : 'Аффирмация';
+      await createPending({
+        category: aiCategory || category,
+        title: titleNorm,
+        text: current.text,
+        meaning: current.explanation,
+        practice: current.practice,
+        createdBy: user.uid,
+      });
+      setSentPublicIds((prev) => prev.includes(current.id) ? prev : [...prev, current.id]);
+      setNotice('Отправлено на модерацию. После одобрения появится в общей ленте.');
+      setTimeout(()=> setNotice(''), 3000);
+    } catch (e) {
+      setAiError(e?.message || 'Не удалось отправить на модерацию');
+    }
+  };
+
   const onOpenAi = () => { setShowAi(true); setAiError(''); };
   const onCreateAi = async () => {
     setAiError('');
@@ -249,24 +280,32 @@ export default function Home() {
     try {
       // 1) запрос к модели
       const gen = await generateAffirmation({ apiKey: key, category: aiCategory, prompt: aiPrompt });
-      // 2) сохраняем и публикуем как обычную аффирмацию
-      const saved = await createAndPublish({
+      // Нормализуем заголовок: максимум 6 слов, иначе возьмём из текста
+      const toWords = (s) => (s || '').toString().trim().split(/\s+/).filter(Boolean);
+      const clampWords = (arr, n=6) => arr.slice(0, n).join(' ');
+      const titleRaw = (gen.title || '').trim();
+      const titleNorm = (() => {
+        const words = toWords(titleRaw);
+        if (words.length === 0) return clampWords(toWords(gen.text || ''), 6);
+        if (words.length > 6) return clampWords(words, 6) + '…';
+        return words.join(' ');
+      })();
+      // 2) Всегда сохраняем в личные "Мои"
+      const mine = await addMy(user.uid, {
         category: aiCategory,
+        title: titleNorm,
         text: gen.text,
         meaning: gen.explanation,
         practice: gen.practice,
-        createdBy: user?.uid || null,
       });
-      // 3) добавить в локальный список текущей категории (рендер использует explanation)
+      // Добавим в локальные данные раздела "Мои" и покажем сразу
       setData((prev) => {
-        const list = prev[aiCategory] || [];
-        const next = [{ id: saved.id, text: saved.text, practice: saved.practice, explanation: saved.meaning }, ...list];
-        return { ...prev, [aiCategory]: next };
+        const list = prev.my || [];
+        const next = [{ id: mine.id, title: mine.title, text: mine.text, practice: mine.practice, explanation: mine.meaning }, ...list];
+        return { ...prev, my: next };
       });
-      // если создавали в другой категории — переключимся
-      setCategory(aiCategory);
-      // показать сгенерированную карточку сразу
-      setQueue((q)=> [saved.id, ...q.filter((id)=> id !== saved.id)]);
+      setCategory('my');
+      setQueue((q)=> [mine.id, ...q.filter((id)=> id !== mine.id)]);
       setIndex(0);
       // сохранить выбор категории для модалки
       try { localStorage.setItem('ai:category', aiCategory); } catch {}
@@ -331,6 +370,23 @@ export default function Home() {
             {category === c.key && <span className="chip-dot" aria-hidden="true" />}
           </button>
         ))}
+        {user?.uid && (
+          <button
+            key="my"
+            className={`chip ${category === 'my' ? 'active' : ''}`}
+            onClick={() => onSelectCategory('my')}
+            style={{ cursor: 'pointer' }}
+          >
+            Мои ✨
+            {category === 'my' && <span className="chip-dot" aria-hidden="true" />}
+          </button>
+        )}
+
+      {notice && (
+        <div className="card" style={{ position: 'fixed', bottom: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 70, background: 'var(--surface)', border: '1px solid var(--border)' }}>
+          <div style={{ padding: '10px 14px' }}>{notice}</div>
+        </div>
+      )}
       </div>
 
       {!visible.length ? (
@@ -346,7 +402,9 @@ export default function Home() {
             onHide={onHide}
             onOpenAi={onOpenAi}
             disabledNext={showPause}
-            categoryLabel={(categories.find((x) => x.key === category) || {}).labelLong}
+            categoryLabel={category === 'my' ? 'Мои аффирмации ✨' : (categories.find((x) => x.key === category) || {}).labelLong}
+            onSubmitPublic={category === 'my' && isUnlimited ? onSubmitPublic : undefined}
+            submitPublicDone={category === 'my' && current ? sentPublicIds.includes(current.id) : false}
             favorited={!!(current && favorites.some((x) => x.id === current.id))}
           />
           <div className="actions" style={{ marginTop: 12, justifyContent: 'flex-start' }}>

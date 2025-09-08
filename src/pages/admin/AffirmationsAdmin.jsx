@@ -51,7 +51,7 @@ export default function AffirmationsAdmin() {
           <div className="form-inline">
             <label className="section-title">Статус</label>
             <div className="chips">
-              {['any','draft','published'].map(s => (
+              {['any','pending','draft','published'].map(s => (
                 <button key={s} className={`chip chip-compact ${status===s?'active':''}`} onClick={()=>setStatus(s)}>{s}</button>
               ))}
             </div>
@@ -130,7 +130,7 @@ export default function AffirmationsAdmin() {
             <div key={it.id} className="list-item">
               <div className="badges">
                 <div className="badge">{it.category}</div>
-                <div className={`badge ${it.status==='published'?'published':'draft'}`}>{it.status}</div>
+                <div className={`badge ${it.status==='published'?'published':(it.status==='pending'?'pending':'draft')}`}>{it.status}</div>
               </div>
               <input className="form-input" defaultValue={it.text} onBlur={(e)=>onQuickSave(it,'text',e.target.value)} />
               <textarea className="form-input" defaultValue={it.meaning || it.explanation || ''} rows={3} onBlur={(e)=>onQuickSave(it,'meaning',e.target.value)} />

@@ -2,6 +2,7 @@ import { collection, addDoc, serverTimestamp, updateDoc, doc, query, where, orde
 import { db } from './firebase';
 
 const COL = 'affirmations';
+const colMy = (uid) => collection(db, 'users', uid, 'my_affirmations');
 
 // Public: list published by category with optional pagination
 export async function listPublishedByCategory(category, pageSize = 20, cursor = null) {
@@ -18,6 +19,37 @@ export async function listPublishedByCategory(category, pageSize = 20, cursor = 
   const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   const nextCursor = snap.docs.length ? snap.docs[snap.docs.length - 1] : null;
   return { items, nextCursor };
+}
+
+// ===== Personal (per-user) affirmations =====
+export async function listMy(uid, pageSize = 50, cursor = null) {
+  const col = colMy(uid);
+  let q = query(col, orderBy('createdAt', 'desc'), limit(pageSize));
+  if (cursor) q = query(q, startAfter(cursor));
+  const snap = await getDocs(q);
+  const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const nextCursor = snap.docs.length ? snap.docs[snap.docs.length - 1] : null;
+  return { items, nextCursor };
+}
+
+export async function addMy(uid, { category, title = '', text, meaning = '', practice = '' }) {
+  const now = serverTimestamp();
+  const ref = await addDoc(colMy(uid), {
+    category: (category || 'love').toLowerCase(),
+    title: title || '',
+    text: text || '',
+    meaning: meaning || '',
+    practice: practice || '',
+    createdAt: now,
+    updatedAt: now,
+    source: 'ai',
+  });
+  return { id: ref.id, category: (category||'love').toLowerCase(), title, text, meaning, practice };
+}
+
+export async function removeMy(uid, id) {
+  const ref = doc(db, 'users', uid, 'my_affirmations', id);
+  await deleteDoc(ref);
 }
 
 // Admin: list with filters
@@ -76,4 +108,24 @@ export async function createAndPublish({ category, text, meaning = '', practice 
   const id = await createDraft({ category, text, meaning, practice, createdBy });
   await publishItem(id, createdBy);
   return { id, category: (category||'love').toLowerCase(), text, meaning, practice, status: 'published' };
+}
+
+// Helper: создать запись в статусе pending (на модерации)
+export async function createPending({ category, title = '', text, meaning = '', practice = '', createdBy }) {
+  const col = collection(db, COL);
+  const now = serverTimestamp();
+  const docRef = await addDoc(col, {
+    category: (category || 'love').toLowerCase(),
+    title: title || '',
+    text: text || '',
+    meaning: meaning || '',
+    practice: practice || '',
+    status: 'pending',
+    createdAt: now,
+    updatedAt: now,
+    createdBy: createdBy || null,
+    updatedBy: createdBy || null,
+    source: 'ai',
+  });
+  return { id: docRef.id, category: (category||'love').toLowerCase(), title, text, meaning, practice, status: 'pending' };
 }
