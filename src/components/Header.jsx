@@ -83,7 +83,6 @@ export default function Header() {
         <nav id="main-nav" role="menu" className={`nav ${open ? 'nav-open' : ''}`} onClick={() => setOpen(false)}>
           <NavLink to="/about" style={({ isActive }) => ({ ...linkStyle, ...(isActive ? activeStyle : {}) })}>о проекте</NavLink>
           <NavLink to="/useful" style={({ isActive }) => ({ ...linkStyle, ...(isActive ? activeStyle : {}) })}>полезное</NavLink>
-          <NavLink to="/contacts" style={({ isActive }) => ({ ...linkStyle, ...(isActive ? activeStyle : {}) })}>контакты</NavLink>
           <NavLink to="/favorites" style={({ isActive }) => ({ ...linkStyle, ...(isActive ? activeStyle : {}) })}>избранное</NavLink>
           <button
             type="button"
