@@ -5,8 +5,9 @@ import { affirmations as localAffirmations } from '../data/affirmations';
 import { loadAffirmations } from '../data/loadAffirmations';
 import { useAppStore } from '../store/useAppStore';
 import { useAuth } from '../auth/AuthProvider';
-import { addFavoriteRemote, removeFavoriteRemote, addHiddenRemote } from '../services/userData';
-import { listPublishedByCategory } from '../services/affirmations';
+import { addFavoriteRemote, removeFavoriteRemote, addHiddenRemote, watchUserRole } from '../services/userData';
+import { listPublishedByCategory, createAndPublish } from '../services/affirmations';
+import { generateAffirmation, getOpenAIApiKey, setOpenAIApiKey, getDailyUsed, incDailyUsed } from '../services/ai';
 
 const categories = [
   { key: 'love', labelShort: 'Любовь ❤️', labelLong: 'Любовь и отношения ❤️' },
@@ -35,6 +36,24 @@ export default function Home() {
   const pauseTimerRef = useRef(null);
   const rapidRef = useRef({ lastAt: 0, streak: 0 });
   const [practiceIdx, setPracticeIdx] = useState(0);
+  // AI modal state
+  const [showAi, setShowAi] = useState(false);
+  const [aiCategory, setAiCategory] = useState(() => {
+    try { return localStorage.getItem('ai:category') || 'love'; } catch { return 'love'; }
+  });
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState('');
+  const DAILY_LIMIT = 3;
+  const usedToday = getDailyUsed();
+  const [role, setRole] = useState(null); // { role: 'pro' | 'admin' | 'user' } | null
+  const isUnlimited = role?.role === 'pro' || role?.role === 'admin';
+
+  useEffect(() => {
+    if (!user?.uid) { setRole(null); return; }
+    const unsub = watchUserRole(user.uid, (r)=> setRole(r));
+    return () => { try { unsub && unsub(); } catch {} };
+  }, [user?.uid]);
 
   // Mindful practice variants for pause modal
   const practices = [
@@ -218,6 +237,49 @@ export default function Home() {
     setIndex((i) => (i + 1) % orderedVisible.length);
   };
 
+  const onOpenAi = () => { setShowAi(true); setAiError(''); };
+  const onCreateAi = async () => {
+    setAiError('');
+    if (!aiPrompt.trim()) { setAiError('Опишите, о чём именно нужна аффирмация.'); return; }
+    if (!user?.uid) { setAiError('Войдите в аккаунт, чтобы создать свою аффирмацию.'); return; }
+    // лимит в сутки
+    if (!isUnlimited && getDailyUsed() >= DAILY_LIMIT) { setAiError('Лимит на сегодня исчерпан. Возвращайтесь завтра ✨'); return; }
+    const key = getOpenAIApiKey(); // может быть пустым, если настроен прокси
+    setAiLoading(true);
+    try {
+      // 1) запрос к модели
+      const gen = await generateAffirmation({ apiKey: key, category: aiCategory, prompt: aiPrompt });
+      // 2) сохраняем и публикуем как обычную аффирмацию
+      const saved = await createAndPublish({
+        category: aiCategory,
+        text: gen.text,
+        meaning: gen.explanation,
+        practice: gen.practice,
+        createdBy: user?.uid || null,
+      });
+      // 3) добавить в локальный список текущей категории (рендер использует explanation)
+      setData((prev) => {
+        const list = prev[aiCategory] || [];
+        const next = [{ id: saved.id, text: saved.text, practice: saved.practice, explanation: saved.meaning }, ...list];
+        return { ...prev, [aiCategory]: next };
+      });
+      // если создавали в другой категории — переключимся
+      setCategory(aiCategory);
+      // показать сгенерированную карточку сразу
+      setQueue((q)=> [saved.id, ...q.filter((id)=> id !== saved.id)]);
+      setIndex(0);
+      // сохранить выбор категории для модалки
+      try { localStorage.setItem('ai:category', aiCategory); } catch {}
+      // 4) закрыть модалку и очистить ошибки
+      setShowAi(false);
+      if (!isUnlimited) incDailyUsed();
+    } catch (e) {
+      setAiError(e?.message || 'Ошибка генерации');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   const onSelectCategory = (key) => {
     setCategory(key);
     setIndex(0);
@@ -282,11 +344,12 @@ export default function Home() {
             onNext={onNext}
             onFavorite={onFavorite}
             onHide={onHide}
+            onOpenAi={onOpenAi}
             disabledNext={showPause}
             categoryLabel={(categories.find((x) => x.key === category) || {}).labelLong}
             favorited={!!(current && favorites.some((x) => x.id === current.id))}
           />
-          <div className="actions" style={{ marginTop: 12 }}>
+          <div className="actions" style={{ marginTop: 12, justifyContent: 'flex-start' }}>
             <button className="action action-secondary" onClick={onResetOrder} title="Сбросить порядок показа для этой категории">Сбросить порядок</button>
           </div>
         </div>
@@ -310,6 +373,55 @@ export default function Home() {
               >
                 {pauseLeft > 0 ? 'Подождите…' : 'Я готов(а), продолжить осознанно'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAi && (
+        <div aria-modal="true" role="dialog" style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'grid', placeItems: 'center', background: 'rgba(0,0,0,0.45)' }}>
+          <div className="card ai-modal" style={{ width: 'min(720px, 96vw)', padding: 20 }}>
+            <h2 style={{ margin: '0 0 8px 0', fontSize: 20 }}>Создать аффирмацию на свою тему</h2>
+            <p className="muted" style={{ marginTop: 0 }}>Шаг 1. Выберите категорию • Шаг 2. Опишите запрос • Шаг 3. Создайте</p>
+            <div className="form-row">
+              <label className="section-title">Категория</label>
+              <div className="chips">
+                {categories.map((c) => (
+                  <button key={c.key} className={`chip chip-compact ${aiCategory===c.key?'active':''}`} onClick={()=>setAiCategory(c.key)}>{c.labelShort}</button>
+                ))}
+              </div>
+            </div>
+            <div className="form-row">
+              <label className="section-title">Ваш запрос</label>
+              <textarea
+                className="form-input ai-textarea"
+                rows={8}
+                style={{ resize: 'vertical', minHeight: 140, fontSize: 15.5, lineHeight: 1.55, padding: '14px 16px' }}
+                value={aiPrompt}
+                onChange={(e)=>setAiPrompt(e.target.value)}
+                placeholder={`Опишите контекст, желаемое состояние и стиль. Например: «Аффирмация про уверенность в создании сайтов как фрилансер — меньше сомнений, больше фокуса и радости от процесса».`}
+              />
+              <div className="muted" style={{ fontSize: 12 }}>
+                Подсказка: напишите контекст (что происходит), желаемое состояние (что хотите чувствовать/делать), и ограничения (без токсичной позитивности, современный язык).
+              </div>
+            </div>
+            <div className="muted" style={{ fontSize: 12 }}>
+              {user?.uid ? (
+                isUnlimited ? 'У вас расширенный аккаунт (PRO/ADMIN): без лимитов ✨' : `Доступно сегодня: ${Math.max(0, DAILY_LIMIT - usedToday)} из ${DAILY_LIMIT}`
+              ) : 'Войдите, чтобы создавать свои аффирмации'}
+            </div>
+            {aiError ? <div className="card" style={{ border: '1px solid #fecaca', background: '#fff1f2', color: '#7f1d1d' }}>{aiError}</div> : null}
+            {aiLoading && (
+              <div className="card" style={{ marginTop: 8, padding: 12, background: 'var(--elev)', border: '1px dashed var(--border)' }}>
+                <div style={{ fontWeight: 600, marginBottom: 6 }}>Создаём вашу аффирмацию…</div>
+                <div style={{ height: 8, background: 'var(--surface)', borderRadius: 6, overflow: 'hidden' }}>
+                  <div style={{ width: '100%', height: '100%', background: 'linear-gradient(90deg, #b3e5fc 0%, #81d4fa 50%, #b3e5fc 100%)', backgroundSize: '200% 100%', animation: 'shine 1.2s infinite linear' }} />
+                </div>
+              </div>
+            )}
+            <div className="actions" style={{ marginTop: 12, justifyContent: 'flex-end', gap: 8 }}>
+              <button className="action action-secondary" onClick={()=>{ setShowAi(false); }}>Отмена</button>
+              <button className="action action-primary" onClick={onCreateAi} disabled={aiLoading || !user?.uid || (!isUnlimited && usedToday >= DAILY_LIMIT)}>{aiLoading ? 'Создаём…' : 'Создать'}</button>
             </div>
           </div>
         </div>

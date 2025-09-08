@@ -70,3 +70,10 @@ export async function deleteItem(id) {
   const ref = doc(db, COL, id);
   await deleteDoc(ref);
 }
+
+// Helper: создать черновик и сразу опубликовать
+export async function createAndPublish({ category, text, meaning = '', practice = '', createdBy }) {
+  const id = await createDraft({ category, text, meaning, practice, createdBy });
+  await publishItem(id, createdBy);
+  return { id, category: (category||'love').toLowerCase(), text, meaning, practice, status: 'published' };
+}

@@ -860,6 +860,31 @@ header .nav a:hover {
   color: var(--text);
 }
 
+/* ===== AI modal styles (scoped) ===== */
+
+.ai-modal .form-row { display: grid; gap: 8px; margin-top: 24px; }
+
+.ai-modal .ai-textarea {
+  border: 1px solid var(--border);
+  background: var(--elev);
+  color: var(--text);
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 0 rgba(0,0,0,.02) inset;
+  transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+}
+
+.ai-modal .ai-textarea::placeholder { color: color-mix(in oklab, var(--muted) 88%, transparent); }
+
+.ai-modal .ai-textarea:focus {
+  outline: none;
+  border-color: #81d4fa;
+  box-shadow: 0 0 0 3px color-mix(in oklab, #81d4fa 30%, transparent);
+  background: var(--elev);
+}
+
+@keyframes shine { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
 .card.placeholder p {
   color: var(--muted);
   margin: 0;

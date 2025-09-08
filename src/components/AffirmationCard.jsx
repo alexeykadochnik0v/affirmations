@@ -1,6 +1,6 @@
 import { memo } from 'react';
 
-export default memo(function AffirmationCard({ item, onNext, onFavorite, onHide, disabledNext = false, categoryLabel, favorited = false }) {
+export default memo(function AffirmationCard({ item, onNext, onFavorite, onHide, onOpenAi, disabledNext = false, categoryLabel, favorited = false }) {
   if (!item) return null;
   return (
     <article className="card aff-card" style={{ overflow: 'hidden' }}>
@@ -38,7 +38,7 @@ export default memo(function AffirmationCard({ item, onNext, onFavorite, onHide,
       {/* Bottom actions */}
       <div className="aff-actions">
         <button className="action action-primary" onClick={onNext} title={disabledNext ? 'Немного паузы для осознанности' : 'Следующая'} disabled={disabledNext}>Следующая аффирмация →</button>
-        <button className="action action-secondary" title="Скоро">Хочу аффирмацию на свою тему</button>
+        <button className="action action-secondary" onClick={onOpenAi}>Хочу аффирмацию на свою тему</button>
       </div>
     </article>
   );
