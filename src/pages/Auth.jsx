@@ -18,11 +18,17 @@ export default function AuthPage() {
         // добавим GitHub позже
         GoogleAuthProvider.PROVIDER_ID,
       ],
-      signInFlow: 'popup',
+      // На iOS/Safari всплывающие окна и сторонние cookie часто блочатся → используем redirect
+      signInFlow: 'redirect',
       callbacks: {
         signInSuccessWithAuthResult: () => {
           navigate('/');
           return false; // предотвращаем редирект по умолчанию
+        },
+        signInFailure: (error) => {
+          // Покажем пользователю причину (часто это блокировка всплывающих окон/cookie)
+          const msg = error?.message || 'Не удалось выполнить вход. Попробуйте ещё раз или отключите блокировку всплывающих окон/трекеров.';
+          try { alert(msg); } catch {}
         },
       },
     });
