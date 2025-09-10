@@ -7,7 +7,7 @@ import { GoogleAuthProvider, signInWithRedirect, getRedirectResult, signInWithPo
 import 'firebaseui/dist/firebaseui.css';
 
 export default function AuthPage() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, loading } = useAuth();
   const navigate = useNavigate();
   const [uiError, setUiError] = useState('');
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
@@ -20,9 +20,8 @@ export default function AuthPage() {
     // 0) Обработаем результат редиректа (если мы вернулись от Google)
     getRedirectResult(auth)
       .then((res) => {
-        if (res && res.user) {
-          navigate('/');
-        }
+        // навигацию делаем только через onAuthStateChanged в провайдере
+        try { console.log('Auth currentUser after redirect:', auth.currentUser || null); } catch {}
       })
       .catch((e) => {
         setUiError(e?.message || 'Ошибка после возврата из Google. Проверьте авторизованные домены в Firebase Auth.');
@@ -57,6 +56,11 @@ export default function AuthPage() {
     return () => ui.reset();
   }, [user, navigate]);
 
+  // Если провайдер уже отдал пользователя — уводим с /auth
+  useEffect(() => {
+    if (user) navigate('/');
+  }, [user, navigate]);
+
   return (
     <div className="container" style={{ maxWidth: 720 }}>
       <h1 style={{ marginBottom: 12 }}>Вход</h1>
@@ -69,23 +73,12 @@ export default function AuthPage() {
               {uiError}
             </div>
           ) : null}
-          {preferRedirect && (
-            <div className="actions" style={{ marginTop: 12 }}>
-              <button
-                className="action action-secondary"
-                onClick={async () => {
-                  try {
-                    setUiError('');
-                    await signInWithRedirect(auth, new GoogleAuthProvider());
-                  } catch (e) {
-                    setUiError(e?.message || 'Ошибка redirect-входа');
-                  }
-                }}
-              >
-                Войти через Google (redirect)
-              </button>
+          {loading ? (
+            <div className="card" style={{ marginTop: 10 }}>
+              Проверяем сессию…
             </div>
-          )}
+          ) : null}
+          {/* Убираем ручной redirect, чтобы избежать гонок с FirebaseUI */}
         </section>
       )}
 
