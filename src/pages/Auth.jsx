@@ -10,6 +10,7 @@ export default function AuthPage() {
   const { user, signOut, loading } = useAuth();
   const navigate = useNavigate();
   const [uiError, setUiError] = useState('');
+  const [debugOpen, setDebugOpen] = useState(false);
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
   const isInApp = /FBAN|FBAV|Instagram|Line|Twitter|VKClient|OkApp/i.test(navigator.userAgent);
@@ -61,6 +62,13 @@ export default function AuthPage() {
     if (user) navigate('/');
   }, [user, navigate]);
 
+  useEffect(() => {
+    try {
+      const qp = new URLSearchParams(window.location.search);
+      if (qp.get('authdebug') === '1') setDebugOpen(true);
+    } catch {}
+  }, []);
+
   return (
     <div className="container" style={{ maxWidth: 720 }}>
       <h1 style={{ marginBottom: 12 }}>Вход</h1>
@@ -78,7 +86,26 @@ export default function AuthPage() {
               Проверяем сессию…
             </div>
           ) : null}
-          {/* Убираем ручной redirect, чтобы избежать гонок с FirebaseUI */}
+          {debugOpen && (
+            <div className="card" style={{ marginTop: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <strong>Auth Debug</strong>
+                <button className="action pill-mini" onClick={() => setDebugOpen(false)}>Скрыть</button>
+              </div>
+              <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontSize: 12, opacity: .9 }}>
+{JSON.stringify({
+  useAuth_user_uid: user?.uid || null,
+  useAuth_loading: loading,
+  auth_current_uid: auth.currentUser?.uid || null,
+}, null, 2)}
+              </pre>
+              <div className="actions">
+                <button className="action" onClick={() => { try { console.log('auth.currentUser', auth.currentUser); alert('См. консоль: auth.currentUser'); } catch {} }}>Показать currentUser в консоли</button>
+                <button className="action" onClick={async () => { try { if (auth.currentUser) { await auth.currentUser.getIdToken(true); alert('Токен обновлён'); } else { alert('Пользователь не найден'); } } catch (e) { alert(e?.message || 'Ошибка обновления токена'); } }}>Обновить токен</button>
+              </div>
+              <div className="muted" style={{ fontSize: 12 }}>Откройте /auth?authdebug=1 чтобы видеть этот блок.</div>
+            </div>
+          )}
         </section>
       )}
 
